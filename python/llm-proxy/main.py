@@ -1,9 +1,8 @@
-import re
 import time
 import logging
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -27,6 +26,7 @@ class ChatResponse(BaseModel):
     response: str
     blocked: bool = False
     block_reason: str | None = None
+    risk_score: int = 0
     filtered: bool = False
     filter_actions: list[str] = []
     latency_ms: float = 0
@@ -44,12 +44,24 @@ async def chat(req: ChatRequest):
     # 입력 검증
     input_result = check_input(req.prompt)
     if input_result["blocked"]:
-        logger.warning(f"BLOCKED input: reason={input_result['reason']}, prompt={req.prompt[:100]}")
+        logger.warning(
+            f"BLOCKED input: reason={input_result['reason']}, "
+            f"score={input_result['score']}, "
+            f"prompt={req.prompt[:100]}"
+        )
         return ChatResponse(
             response="",
             blocked=True,
             block_reason=input_result["reason"],
+            risk_score=input_result["score"],
             latency_ms=(time.time() - start) * 1000,
+        )
+
+    # 점수가 있지만 차단은 안 된 경우 로그
+    if input_result["score"] > 0:
+        logger.info(
+            f"LOW RISK input: score={input_result['score']}, "
+            f"details={input_result['details']}"
         )
 
     # LLM 호출
@@ -78,6 +90,7 @@ async def chat(req: ChatRequest):
 
     return ChatResponse(
         response=final_response,
+        risk_score=input_result["score"],
         filtered=bool(filter_actions),
         filter_actions=filter_actions,
         latency_ms=latency,

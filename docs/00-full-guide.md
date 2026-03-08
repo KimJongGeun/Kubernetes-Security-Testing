@@ -1092,7 +1092,52 @@ Jay_code/
 
 ---
 
-# 14. 트러블슈팅
+# 14. Falco 런타임 보안
+
+## Falco가 하는 일
+
+eBPF로 커널 레벨에서 syscall을 감시해서, 컨테이너 안에서 일어나는 이상 행위를 실시간으로 탐지한다.
+
+```
+컨테이너에서 셸 실행 → openat() syscall → Falco eBPF 프로브가 캐치 → 룰 매칭 → 경고
+```
+
+## ArgoCD로 배포
+
+```bash
+kubectl apply -f argocd/falco-app.yaml
+```
+
+Falco 공식 Helm 차트를 ArgoCD가 직접 받아서 설치한다. GitHub push 없이도 ArgoCD가 Helm 레포에서 차트를 받아옴.
+
+## 주요 설정
+
+- `driver.kind: modern_ebpf` — Kind(Docker) 환경 호환
+- `falcosidekick` — 이벤트를 웹 UI, Slack 등으로 전달
+- `customRules` — 환경에 맞는 커스텀 탐지 룰
+
+## 커스텀 룰 5가지
+
+| 룰 | 심각도 | 탐지 내용 |
+|---|---|---|
+| Shell spawned in container | WARNING | 컨테이너에서 셸 실행 |
+| Package manager in container | WARNING | apt, apk 등 패키지 설치 시도 |
+| Network tool in container | WARNING | curl, wget, nc 실행 |
+| Sensitive file modification | CRITICAL | /etc/passwd, /etc/shadow 수정 시도 |
+| Reverse shell in container | CRITICAL | 리버스 셸 연결 시도 |
+
+## Falcosidekick UI 접속
+
+```bash
+kubectl port-forward svc/falco-falcosidekick-ui -n falco 2802:2802
+# http://localhost:2802
+```
+
+상세 내용: [Falco 런타임 보안 구축](03-falco-runtime-security.md)
+
+---
+
+# 15. 트러블슈팅
 
 ## "Docker daemon not running" 에러
 
@@ -1162,7 +1207,7 @@ kubectl config use-context kind-local-k8s
 
 ---
 
-# 15. 클러스터 삭제 및 재생성
+# 16. 클러스터 삭제 및 재생성
 
 ## 클러스터만 삭제
 
@@ -1203,6 +1248,9 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/st
 
 # 7. ArgoCD Application 등록
 kubectl apply -f argocd/sample-nginx-app.yaml
+
+# 8. Falco 런타임 보안 (ArgoCD로 배포)
+kubectl apply -f argocd/falco-app.yaml
 ```
 
 ## 도구까지 전부 제거

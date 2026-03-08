@@ -1,0 +1,92 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: falco
+  namespace: argocd
+spec:
+  project: default
+  source:
+    # Falco 공식 Helm 차트
+    repoURL: https://falcosecurity.github.io/charts
+    chart: falco
+    targetRevision: 4.*       # 4.x 최신 버전 자동 추적
+    helm:
+      valueFiles: []
+      # Git 레포의 values.yaml 대신 inline values 사용
+      values: |
+        driver:
+          kind: modern_ebpf
+        tty: true
+        falcosidekick:
+          enabled: true
+          webui:
+            enabled: true
+        customRules:
+          custom-rules.yaml: |-
+            # 커스텀 룰 1: 컨테이너에서 셸 실행 탐지
+            - rule: Shell spawned in container
+              desc: Container shell execution detected
+              condition: >
+                spawned_process and container and
+                proc.name in (bash, sh, zsh, ash) and
+                not proc.pname in (healthcheck)
+              output: >
+                Shell spawned (container=%container.name pod=%k8s.pod.name
+                ns=%k8s.ns.name command=%proc.cmdline user=%user.name
+                image=%container.image.repository)
+              priority: WARNING
+              tags: [container, shell, custom, mitre_execution]
+            # 커스텀 룰 2: 패키지 매니저 실행 탐지
+            - rule: Package manager in container
+              desc: Package manager executed in container
+              condition: >
+                spawned_process and container and
+                proc.name in (apt, apt-get, yum, dnf, apk, pip, npm)
+              output: >
+                Package manager executed (container=%container.name pod=%k8s.pod.name
+                ns=%k8s.ns.name command=%proc.cmdline user=%user.name)
+              priority: WARNING
+              tags: [container, package_manager, custom, mitre_execution]
+            # 커스텀 룰 3: 네트워크 도구 실행 탐지
+            - rule: Network tool in container
+              desc: Network tool executed in container
+              condition: >
+                spawned_process and container and
+                proc.name in (curl, wget, nc, ncat, nmap)
+              output: >
+                Network tool executed (container=%container.name pod=%k8s.pod.name
+                ns=%k8s.ns.name command=%proc.cmdline user=%user.name)
+              priority: WARNING
+              tags: [container, network, custom, mitre_command_and_control]
+            # 커스텀 룰 4: 민감 파일 수정 탐지
+            - rule: Sensitive file modification
+              desc: Sensitive file write attempt
+              condition: >
+                open_write and container and
+                fd.name in (/etc/passwd, /etc/shadow, /etc/sudoers)
+              output: >
+                Sensitive file modified (file=%fd.name container=%container.name
+                pod=%k8s.pod.name ns=%k8s.ns.name command=%proc.cmdline user=%user.name)
+              priority: CRITICAL
+              tags: [container, filesystem, custom, mitre_persistence]
+            # 커스텀 룰 5: 리버스 셸 탐지
+            - rule: Reverse shell in container
+              desc: Reverse shell detected
+              condition: >
+                spawned_process and container and
+                ((proc.name = bash and proc.args contains "/dev/tcp") or
+                 (proc.name in (nc, ncat) and proc.args contains "-e"))
+              output: >
+                Reverse shell detected! (container=%container.name pod=%k8s.pod.name
+                ns=%k8s.ns.name command=%proc.cmdline user=%user.name)
+              priority: CRITICAL
+              tags: [container, reverse_shell, custom, mitre_execution]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: falco
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

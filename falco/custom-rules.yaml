@@ -1,0 +1,73 @@
+# Falco 커스텀 룰 - DevSecOps 학습용
+# 실제 공격 시나리오를 탐지하는 룰 모음
+
+# 룰 1: 컨테이너에서 셸(bash/sh) 실행 탐지
+# 운영 환경에서 컨테이너 안에 직접 접속하는 건 위험 신호
+- rule: Shell spawned in container
+  desc: 컨테이너 안에서 셸이 실행됨 (잠재적 침입)
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (bash, sh, zsh, ash) and
+    not proc.pname in (healthcheck)
+  output: >
+    셸 실행 탐지 (container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+    command=%proc.cmdline user=%user.name image=%container.image.repository)
+  priority: WARNING
+  tags: [container, shell, custom, mitre_execution]
+
+# 룰 2: 컨테이너에서 패키지 매니저 실행 탐지
+# 공격자가 추가 도구를 설치하려는 시도
+- rule: Package manager in container
+  desc: 컨테이너에서 패키지 매니저 실행됨 (의심스러운 도구 설치 시도)
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (apt, apt-get, yum, dnf, apk, pip, npm)
+  output: >
+    패키지 매니저 실행 (container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+    command=%proc.cmdline user=%user.name)
+  priority: WARNING
+  tags: [container, package_manager, custom, mitre_execution]
+
+# 룰 3: 컨테이너에서 curl/wget 실행 탐지
+# 외부에서 악성 스크립트를 다운로드하려는 시도
+- rule: Network tool in container
+  desc: 컨테이너에서 네트워크 도구 실행됨 (외부 통신 시도)
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (curl, wget, nc, ncat, nmap)
+  output: >
+    네트워크 도구 실행 (container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+    command=%proc.cmdline user=%user.name)
+  priority: WARNING
+  tags: [container, network, custom, mitre_command_and_control]
+
+# 룰 4: /etc/passwd 또는 /etc/shadow 수정 시도
+# 권한 상승 또는 백도어 계정 생성 시도
+- rule: Sensitive file modification
+  desc: 민감 파일 수정 시도 (계정 변조 가능성)
+  condition: >
+    open_write and
+    container and
+    fd.name in (/etc/passwd, /etc/shadow, /etc/sudoers)
+  output: >
+    민감 파일 수정 시도 (file=%fd.name container=%container.name pod=%k8s.pod.name
+    ns=%k8s.ns.name command=%proc.cmdline user=%user.name)
+  priority: CRITICAL
+  tags: [container, filesystem, custom, mitre_persistence]
+
+# 룰 5: 컨테이너에서 리버스 셸 의심 행위 탐지
+- rule: Reverse shell in container
+  desc: 리버스 셸 의심 행위 탐지
+  condition: >
+    spawned_process and
+    container and
+    ((proc.name = bash and proc.args contains "/dev/tcp") or
+     (proc.name in (nc, ncat) and proc.args contains "-e"))
+  output: >
+    리버스 셸 의심! (container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+    command=%proc.cmdline user=%user.name)
+  priority: CRITICAL
+  tags: [container, reverse_shell, custom, mitre_execution]

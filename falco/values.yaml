@@ -1,0 +1,13 @@
+# Falco Helm values for Kind (local Docker environment)
+driver:
+  kind: modern_ebpf        # Kind/Docker Desktop 호환 드라이버
+
+tty: true                   # 로그 가독성 향상
+
+falcosidekick:
+  enabled: true             # 이벤트를 외부로 전달하는 사이드킥
+  webui:
+    enabled: true           # 웹 UI로 이벤트 확인 가능
+
+# 커스텀 룰은 나중에 추가 예정
+customRules: {}

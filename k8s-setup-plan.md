@@ -112,3 +112,5 @@ k8s/
 | 2026.03.08 | NetworkPolicy, RBAC, Pod Security 적용 |
 | 2026.03.08 | Kubernetes Dashboard 설치 |
 | 2026.03.08 | 전체 검증 완료 |
+| 2026.03.08 | ArgoCD 설치 및 GitOps 구축 |
+| 2026.03.08 | 샘플 앱(nginx) ArgoCD 자동 배포 확인 |

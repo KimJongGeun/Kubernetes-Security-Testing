@@ -17,10 +17,11 @@
 8. [보안 3: Pod Security — 컨테이너 실행 제한](#8-보안-3-pod-security--컨테이너-실행-제한)
 9. [Dashboard — 웹 UI 모니터링](#9-dashboard--웹-ui-모니터링)
 10. [k9s — 터미널 모니터링 도구](#10-k9s--터미널-모니터링-도구)
-11. [kubectl 명령어 정리](#11-kubectl-명령어-정리)
-12. [파일 구조 총정리](#12-파일-구조-총정리)
-13. [트러블슈팅](#13-트러블슈팅)
-14. [클러스터 삭제 및 재생성](#14-클러스터-삭제-및-재생성)
+11. [ArgoCD — GitOps 자동 배포](#11-argocd--gitops-자동-배포)
+12. [kubectl 명령어 정리](#12-kubectl-명령어-정리)
+13. [파일 구조 총정리](#13-파일-구조-총정리)
+14. [트러블슈팅](#14-트러블슈팅)
+15. [클러스터 삭제 및 재생성](#15-클러스터-삭제-및-재생성)
 
 ---
 
@@ -834,7 +835,94 @@ k9s --context kind-local-k8s
 
 ---
 
-# 11. kubectl 명령어 정리
+# 11. ArgoCD — GitOps 자동 배포
+
+## GitOps란?
+
+Git에 있는 YAML = 클러스터의 실제 상태. 이게 전부다.
+
+Git에 push하면 ArgoCD가 자동으로 클러스터에 반영한다. 사람이 kubectl apply를 칠 필요가 없다.
+
+```
+git push → ArgoCD 감지 (3분 주기) → 자동 kubectl apply → 배포 완료
+```
+
+## 설치
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+## 웹 UI 접속
+
+```bash
+# 포트포워딩
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+# 브라우저: https://localhost:8080
+# ID: admin
+# PW 확인:
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d
+```
+
+## Application 등록
+
+ArgoCD한테 "이 Git 레포의 이 폴더를 감시해라"고 알려주는 설정이다.
+
+```yaml
+# argocd/sample-nginx-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sample-nginx
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KimJongGeun/Kubernetes-Security-Testing.git
+    targetRevision: main
+    path: apps/sample-nginx       # 이 폴더를 감시
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      selfHeal: true              # kubectl로 직접 바꿔도 Git 상태로 되돌림
+      prune: true                 # Git에서 삭제하면 클러스터에서도 삭제
+```
+
+적용:
+```bash
+kubectl apply -f argocd/sample-nginx-app.yaml
+```
+
+## 핵심 개념
+
+| 개념 | 설명 |
+|---|---|
+| **Sync** | Git과 클러스터 상태를 일치시키는 동작 |
+| **Self-Heal** | 누가 직접 바꿔도 Git 기준으로 원복 |
+| **Prune** | Git에서 파일 삭제 시 클러스터 리소스도 삭제 |
+| **Synced** | Git = 클러스터 (일치) |
+| **OutOfSync** | Git ≠ 클러스터 (불일치, sync 필요) |
+| **Healthy** | 배포된 리소스가 정상 동작 중 |
+
+## 자동 배포 테스트
+
+YAML 수정 후 git push하면 ArgoCD가 자동 반영한다:
+```bash
+# replicas: 2 → 3으로 수정
+# git commit & push
+# → 3분 내에 Pod가 3개로 늘어남
+```
+
+> 상세 가이드: [docs/02-argocd-gitops.md](02-argocd-gitops.md)
+
+---
+
+# 12. kubectl 명령어 정리
 
 ## 기본 조회
 
@@ -942,7 +1030,7 @@ kubectl config use-context kind-local-k8s
 
 ---
 
-# 12. 파일 구조 총정리
+# 13. 파일 구조 총정리
 
 ```
 Jay_code/
@@ -959,7 +1047,17 @@ Jay_code/
 │
 ├── docs/                               # 학습 문서
 │   ├── 00-full-guide.md                # 이 문서 (전체 가이드)
-│   └── 01-k8s-local-setup.md           # 구축 과정 블로그
+│   ├── 01-k8s-local-setup.md           # K8s 구축 과정
+│   └── 02-argocd-gitops.md             # ArgoCD GitOps 구축 과정
+│
+├── argocd/                             # ArgoCD 설정
+│   └── sample-nginx-app.yaml           # Application 등록 (GitHub 감시 설정)
+│
+├── apps/                               # ArgoCD가 배포하는 앱들
+│   └── sample-nginx/
+│       ├── deployment.yaml             # nginx Pod 2개 배포
+│       ├── service.yaml                # ClusterIP Service
+│       └── network-policy.yaml         # Ingress에서만 접근 허용
 │
 ├── k8s-setup-plan.md                   # 구축 결과 요약
 │
@@ -994,7 +1092,7 @@ Jay_code/
 
 ---
 
-# 13. 트러블슈팅
+# 14. 트러블슈팅
 
 ## "Docker daemon not running" 에러
 
@@ -1064,7 +1162,7 @@ kubectl config use-context kind-local-k8s
 
 ---
 
-# 14. 클러스터 삭제 및 재생성
+# 15. 클러스터 삭제 및 재생성
 
 ## 클러스터만 삭제
 
@@ -1096,6 +1194,16 @@ kubectl get pods -A
 ```
 
 5개 명령어면 전체 환경이 복원된다.
+
+ArgoCD까지 포함하면:
+```bash
+# 6. ArgoCD 설치
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# 7. ArgoCD Application 등록
+kubectl apply -f argocd/sample-nginx-app.yaml
+```
 
 ## 도구까지 전부 제거
 

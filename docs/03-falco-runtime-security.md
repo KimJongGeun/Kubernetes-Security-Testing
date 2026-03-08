@@ -326,14 +326,6 @@ kubectl port-forward svc/falco-falcosidekick-ui -n falco 2802:2802
 
 ---
 
-## 배운 것
-
-- 런타임 보안은 빌드/배포 보안과 별개의 영역이다. 둘 다 해야 한다
-- Falco는 eBPF로 커널 레벨에서 감시하기 때문에 컨테이너가 뭘 하든 다 보인다
-- 커스텀 룰을 만들면 우리 환경에 맞는 탐지가 가능하다
-- ArgoCD로 Falco까지 배포하니까 보안 설정도 GitOps로 관리할 수 있다
-- MITRE ATT&CK 태그를 달면 보안 팀과 소통이 쉬워진다
-
 ## 현재 아키텍처
 
 ```

@@ -201,12 +201,6 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/a
 - Docker Desktop이 꺼져있는 줄 모르고 `kind create cluster`를 실행해서 에러가 났다. Docker가 실행 중인지 먼저 확인하자.
 - Dashboard Helm 차트 URL이 바뀌어서 설치가 안 됐다. 공식 문서를 확인하고 `kubectl apply`로 직접 설치했더니 해결됨.
 
-## 이번에 배운 것
-
-- Kind가 이렇게 가벼운 줄 몰랐다. 클러스터 만들고 부수는 데 부담이 없어서 실험하기 좋다.
-- 보안은 나중에 하면 진짜 귀찮다. 처음에 세팅해두니까 이후에 앱 배포할 때 신경 쓸 게 줄어든다.
-- Zero Trust가 거창한 게 아니라 "일단 막고 필요한 것만 열자"라는 단순한 원칙이었다.
-
 ## 다음에 할 것
 
 - [ ] Python으로 간단한 앱 만들어서 K8s에 배포해보기

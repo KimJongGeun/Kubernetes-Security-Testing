@@ -315,13 +315,6 @@ DIFF 버튼을 누르면 Git과 클러스터의 차이점을 볼 수 있다.
 
 ---
 
-## 배운 것
-
-- GitOps는 "Git = 배포의 진실 소스(Single Source of Truth)"라는 단순한 원칙이다
-- ArgoCD의 selfHeal이 강력하다. 실수로 뭔가 건드려도 Git 상태로 알아서 돌아간다
-- 배포 이력이 Git commit에 다 남으니 "누가 언제 뭘 바꿨는지" 추적이 쉽다
-- 롤백도 Git에서 revert하면 끝이다
-
 ## 다음에 할 것
 
 - [ ] Python 웹앱 만들어서 ArgoCD로 배포

@@ -230,7 +230,7 @@ Garak이 probe 하나당 수백 개의 프롬프트를 쏘는데, 무료 API 제
 ## 다음에 할 것
 
 - [x] Garak 스캔 결과 분석 및 리포트 정리
-- [ ] FastAPI로 LLM 프록시 만들어서 K8s 배포
+- [x] FastAPI로 LLM 보안 프록시 만들어서 K8s 배포
 - [ ] LLM Guard로 입출력 검증 레이어 추가
 - [ ] CI/CD에 Garak 스캔 자동화 연동
 - [ ] Trivy로 컨테이너 이미지 보안 스캔

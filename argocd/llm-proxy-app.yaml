@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: llm-proxy
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KimJongGeun/Kubernetes-Security-Testing.git
+    path: apps/llm-proxy
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: llm-proxy
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true

@@ -16,6 +16,9 @@ build/
 # Claude Code 로컬 설정
 .claude/
 
+# 이미지 (로컬에서만 사용)
+images/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -1,0 +1,28 @@
+# Python
+python/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# 환경 변수 / 시크릿
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Claude Code 로컬 설정
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE (로컬 설정은 제외, 공유 설정은 유지)
+# .vscode/settings.json은 유지 (프로젝트 설정 공유용)
+
+# Kubernetes 런타임 (로컬 클러스터 정보)
+kubeconfig
+*.kubeconfig

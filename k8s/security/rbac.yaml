@@ -1,0 +1,74 @@
+# 개발자용 역할: default 네임스페이스에서 읽기/배포 가능, 삭제 제한
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+  namespace: default
+rules:
+  # Pod, Deployment, Service 조회 및 생성
+  - apiGroups: ["", "apps"]
+    resources: ["pods", "deployments", "services", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # Pod 로그 조회
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+  # 시크릿은 조회만 (수정 불가)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+---
+# 읽기 전용 역할: 모니터링/감사용
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: viewer
+  namespace: default
+rules:
+  - apiGroups: ["", "apps", "networking.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+# 개발자 서비스 어카운트
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: developer-sa
+  namespace: default
+---
+# 뷰어 서비스 어카운트
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: viewer-sa
+  namespace: default
+---
+# 개발자 역할 바인딩
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: developer-sa
+    namespace: default
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+---
+# 뷰어 역할 바인딩
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: viewer-binding
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: viewer-sa
+    namespace: default
+roleRef:
+  kind: Role
+  name: viewer
+  apiGroup: rbac.authorization.k8s.io

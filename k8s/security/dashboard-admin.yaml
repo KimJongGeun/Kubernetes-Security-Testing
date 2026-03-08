@@ -1,0 +1,30 @@
+# Dashboard 관리자 서비스 어카운트 (토큰 기반 인증)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+---
+# 클러스터 관리자 권한 바인딩
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dashboard-admin-binding
+subjects:
+  - kind: ServiceAccount
+    name: dashboard-admin
+    namespace: kubernetes-dashboard
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+# 토큰 시크릿 (만료 시간 설정 가능)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dashboard-admin-token
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: dashboard-admin
+type: kubernetes.io/service-account-token

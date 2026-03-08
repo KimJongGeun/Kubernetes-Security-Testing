@@ -1,0 +1,40 @@
+# 기본 네트워크 정책: default 네임스페이스의 모든 인바운드 트래픽 차단
+# 허용된 트래픽만 명시적으로 열어야 함 (Zero Trust 원칙)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: default
+spec:
+  podSelector: {}  # 모든 Pod에 적용
+  policyTypes:
+    - Ingress
+---
+# 기본 네트워크 정책: default 네임스페이스의 모든 아웃바운드 트래픽 차단
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+---
+# DNS 트래픽은 허용 (kube-dns 접근 필요)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

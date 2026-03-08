@@ -1,0 +1,24 @@
+{
+  // Python 기본 설정
+  "python.defaultInterpreterPath": "${workspaceFolder}/python/.venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+
+  // 저장 시 자동 포맷
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // 터미널 가상환경 자동 활성화
+  "python.terminal.activateEnvironment": true,
+
+  // 테스트
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false
+}

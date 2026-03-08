@@ -145,7 +145,7 @@ falco-falcosidekick-ui-redis-0           1/1     Running   (UI 데이터 저장,
 
 ## 기본 탐지 테스트
 
-설치하고 나면 당연히 테스트를 해봐야 한다. nginx 컨테이너에 들어가서 민감 파일을 읽어봤다.
+설치했으니 제대로 동작하는지 테스트해봤다. nginx 컨테이너에 들어가서 민감 파일을 읽어봤다.
 
 ```bash
 kubectl exec -it <nginx-pod> -- /bin/sh -c "cat /etc/shadow"
@@ -174,7 +174,7 @@ Falco 기본 룰이 `/etc/shadow` 접근을 바로 잡아냈다. MITRE ATT&CK T1
 
 ## 커스텀 룰 작성
 
-기본 룰만으로도 많은 걸 잡아내지만, 실무에서는 환경에 맞는 커스텀 룰이 필요하다. 5개를 만들어봤다.
+기본 룰도 쓸만하지만, 우리 환경에 맞는 룰이 따로 있으면 좋겠어서 5개를 직접 만들어봤다.
 
 ### 룰 1: 컨테이너에서 셸 실행 탐지
 
@@ -241,7 +241,7 @@ Falco 기본 룰이 `/etc/shadow` 접근을 바로 잡아냈다. MITRE ATT&CK T1
 
 ## 공격 시나리오 시뮬레이션 결과
 
-커스텀 룰이 제대로 동작하는지 실제 공격 시나리오를 돌려봤다.
+커스텀 룰이 제대로 작동하는지 확인하려고 공격 시나리오를 직접 돌려봤다.
 
 ```bash
 # 셸 접속
@@ -266,7 +266,7 @@ kubectl exec <pod> -- /bin/sh -c "cat /etc/shadow"
 | Network tool in container | 3회 | Command & Control |
 | Read sensitive file untrusted (기본 룰) | 1회 | Credential Access |
 
-모든 공격이 빠짐없이 탐지됐다. 3개 노드 모두에서 이벤트가 올라오는 것도 확인했다.
+다 잡아냈다. 3개 노드에서 전부 이벤트가 올라오는 것도 확인.
 
 ---
 
@@ -281,7 +281,7 @@ kubectl port-forward svc/falco-falcosidekick-ui -n falco 2802:2802
 # http://localhost:2802 접속
 ```
 
-이벤트를 심각도별로 필터링하거나, 시간대별로 확인할 수 있다. 대시보드에서 한눈에 상태를 파악할 수 있어서 좋다.
+심각도별 필터링이나 시간대별 조회가 가능해서 한눈에 상태를 파악하기 좋다.
 
 ---
 

@@ -1,7 +1,7 @@
 # 로컬 Kubernetes 환경 구축 - 완전 학습 가이드
 
-> 이 문서는 Docker 위에 Kubernetes 클러스터를 구축하고 보안 설정까지 적용한 전체 과정을 담고 있다.
-> Kubernetes를 처음 접하는 사람도 이해할 수 있도록 모든 개념과 명령어를 하나하나 설명한다.
+> Docker 위에 Kubernetes 클러스터를 구축하고 보안까지 세팅한 전체 과정을 정리한 문서다.
+> 처음 접하는 사람도 따라할 수 있게 개념이랑 명령어를 하나씩 풀어서 썼다.
 
 ---
 
@@ -20,8 +20,10 @@
 11. [ArgoCD — GitOps 자동 배포](#11-argocd--gitops-자동-배포)
 12. [kubectl 명령어 정리](#12-kubectl-명령어-정리)
 13. [파일 구조 총정리](#13-파일-구조-총정리)
-14. [트러블슈팅](#14-트러블슈팅)
-15. [클러스터 삭제 및 재생성](#15-클러스터-삭제-및-재생성)
+14. [Falco 런타임 보안](#14-falco-런타임-보안)
+15. [Ollama + Garak — LLM 보안 테스트](#15-ollama--garak--llm-보안-테스트)
+16. [트러블슈팅](#16-트러블슈팅)
+17. [클러스터 삭제 및 재생성](#17-클러스터-삭제-및-재생성)
 
 ---
 
@@ -1048,13 +1050,18 @@ Jay_code/
 ├── docs/                               # 학습 문서
 │   ├── 00-full-guide.md                # 이 문서 (전체 가이드)
 │   ├── 01-k8s-local-setup.md           # K8s 구축 과정
-│   └── 02-argocd-gitops.md             # ArgoCD GitOps 구축 과정
+│   ├── 02-argocd-gitops.md             # ArgoCD GitOps 구축 과정
+│   ├── 03-falco-runtime-security.md    # Falco 런타임 보안
+│   └── 04-ollama-garak-ai-security.md  # Ollama + Garak LLM 보안
 │
 ├── argocd/                             # ArgoCD 설정
-│   └── sample-nginx-app.yaml           # Application 등록 (GitHub 감시 설정)
+│   ├── sample-nginx-app.yaml           # sample-nginx 앱 등록
+│   ├── falco-app.yaml                  # Falco 런타임 보안
+│   └── ollama-app.yaml                 # Ollama LLM 서버
 │
 ├── apps/                               # ArgoCD가 배포하는 앱들
-│   └── sample-nginx/
+│   ├── sample-nginx/
+│   └── ollama/                         # Ollama LLM 서버 배포 설정
 │       ├── deployment.yaml             # nginx Pod 2개 배포
 │       ├── service.yaml                # ClusterIP Service
 │       └── network-policy.yaml         # Ingress에서만 접근 허용
@@ -1137,7 +1144,40 @@ kubectl port-forward svc/falco-falcosidekick-ui -n falco 2802:2802
 
 ---
 
-# 15. 트러블슈팅
+# 15. Ollama + Garak — LLM 보안 테스트
+
+## Ollama가 하는 일
+
+로컬에서 LLM을 돌릴 수 있는 서버다. API 비용 없이 모델을 실행할 수 있어서 보안 테스트에 딱이다.
+
+K8s Pod로 배포해서 ArgoCD로 관리한다.
+
+```bash
+# ArgoCD에 등록
+kubectl apply -f argocd/ollama-app.yaml
+
+# 모델 다운로드
+kubectl exec -n ollama deployment/ollama -- ollama pull llama3.2:1b
+```
+
+## Garak으로 보안 스캔
+
+NVIDIA가 만든 LLM 취약점 스캐너다. 프롬프트 인젝션, 탈옥, 인코딩 우회 같은 공격을 자동으로 테스트한다.
+
+```bash
+# 프롬프트 인젝션 테스트
+garak --model_type ollama --model_name llama3.2:1b --probes promptinject
+```
+
+## 스캔 결과
+
+llama3.2:1b한테 promptinject probe를 돌렸더니 인젝션 공격이 대부분 성공했다. 1B짜리 소형 모델은 safety tuning이 부족해서 가드레일이 거의 없다는 걸 확인.
+
+상세 내용: [Ollama + Garak AI 보안](04-ollama-garak-ai-security.md)
+
+---
+
+# 16. 트러블슈팅
 
 ## "Docker daemon not running" 에러
 
@@ -1207,7 +1247,7 @@ kubectl config use-context kind-local-k8s
 
 ---
 
-# 16. 클러스터 삭제 및 재생성
+# 17. 클러스터 삭제 및 재생성
 
 ## 클러스터만 삭제
 
